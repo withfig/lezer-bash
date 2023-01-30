@@ -1,4 +1,4 @@
-@fig/lezer-bash
+# @fig/lezer-bash
 
 This is a Bash grammar for the Lezer parser system.
 
