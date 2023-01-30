@@ -21,8 +21,8 @@ CompleteCommand {
 
 and_or {
   pipeline |
-  And { and_or !and LogicOp<'&&'> newline* pipeline } |
-  Or { and_or !or LogicOp<'||'> newline* pipeline }
+  And { and_or !and '&&' newline* pipeline } |
+  Or { and_or !or '||' newline* pipeline }
 }
 
 compound_list { newline* and_or !sep (separator and_or)* separator? newline* }
@@ -33,7 +33,7 @@ pipeline {
 
 pipeline_seq {
   command | 
-  Pipeline { command LogicOp<'|'> newline* pipeline_seq }
+  Pipeline { command '|' newline* pipeline_seq }
 }
 
 command {
@@ -44,7 +44,7 @@ command {
 
 // rule 8
 FunctionDefinition {
-  FunctionName { word } '(' ')' newline* compound_command IORedirect*
+  Functionname { word } '(' ')' newline* compound_command IORedirect*
 }
 
 IORedirect {
@@ -112,7 +112,7 @@ literal {
 CommandSubstitution { ("$(" CompleteCommand ")") }
 
 case_item_ns { '('? pattern ')' (newline* | compound_list) }
-case_item { '('? pattern ')' (newline* | compound_list) op<';;'> newline* }
+case_item { '('? pattern ')' (newline* | compound_list) ';;' newline* }
 pattern { word ('|' word)* }
 
 IfClause {
@@ -130,6 +130,9 @@ Assignment {
   VariableName { word } ('=' | '+=') literal
 }
 
+@external propSource bashHighlighting from "./highlight"
+
+
 @tokens {
   Comment { "#" ![\n\r]* }
   
@@ -142,19 +145,17 @@ Assignment {
   string_char { ![\\\$"] }
   raw_string_char { !['] }
 
-  op<expr> { expr }
-
   io_number { @digit+ }
-
-  LogicOp<expr> { expr }
-
+  
   separator { (';' | '&' | newline) newline* }
   sequential_sep { (';' | newline) newline* }
 
+  "${" "}" "(" ")" "$(" ")" ";" "&" "&&" "||" "|" "=" "+="
+  
   @precedence { word, io_number }
   @precedence { sequential_sep, word }
   @precedence { raw_string_char, string_char, Comment, spaces, newline, separator, word }
-  @precedence { op, LogicOp, separator }
+  @precedence { ';;', "&&", separator }
 
 }
 
