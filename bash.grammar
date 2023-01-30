@@ -1,0 +1,160 @@
+// Does not support:
+// - Arithmetic expansion
+// - Some specific word rules
+// - Backtick command substitution
+// - Concatenation
+// - Specific case statement types
+
+@precedence {
+  and @left
+  or @left
+  sep @left
+  nl @left
+  io @right
+}
+
+@top Program { newline* | newline* !nl (CompleteCommand newline+)* CompleteCommand? }
+
+CompleteCommand {
+  and_or !sep ((';' | '&') and_or)* (';' | '&')?
+}
+
+and_or {
+  pipeline |
+  And { and_or !and LogicOp<'&&'> newline* pipeline } |
+  Or { and_or !or LogicOp<'||'> newline* pipeline }
+}
+
+compound_list { newline* and_or !sep (separator and_or)* separator? newline* }
+
+pipeline {
+  '!'? pipeline_seq
+}
+
+pipeline_seq {
+  command | 
+  Pipeline { command LogicOp<'|'> newline* pipeline_seq }
+}
+
+command {
+  compound_command IORedirect* |
+  Command |
+  FunctionDefinition
+}
+
+// rule 8
+FunctionDefinition {
+  word '(' ')' newline* compound_command IORedirect*
+}
+
+IORedirect {
+  io_number? !io (io_file | io_here)
+}
+
+io_file { ('<' | '<&' | '>' | '>&' | '>>' | '<>' | '>|') word }
+io_here { ('<<' | '<<-') word }
+
+Command {
+  // TODO: support specific word rules
+  ((IORedirect | Assignment)*
+  CommandName  { literal }
+  (IORedirect | Arg { literal })*)
+  | (IORedirect | Assignment)+
+}
+
+DoGroup { kw<'do'> compound_list kw<'done'> }
+
+compound_command {
+  Subshell { '(' compound_list ')' } |
+  BraceGroup { '{' compound_list '}' } |
+  WhileClause { kw<'while'> compound_list DoGroup } |
+  UntilClause { kw<'until'> compound_list DoGroup } |
+  // TODO support newline* before in (in general should check 3rd keyword here and in case statement)
+  ForClause { kw<'for'> word ((kw<'in'> word*)? sequential_sep)? DoGroup } |
+  CaseClause |
+  IfClause
+}
+
+CaseClause {
+  kw<'case'> word newline* kw<'in'> newline* case_item+ kw<'esac'> |
+  // TODO: add support for this case type, currently conflicts with subshells
+  // kw<'case'> word newline* kw<'in'> newline* case_item_ns+ kw<'esac'> |
+  kw<'case'> word newline* kw<'in'> newline* kw<'esac'>
+}
+
+@skip { spaces | Comment }
+
+// TODO: support concatenation and arithemtic expansion
+literal {
+  Literal { word }
+  | String
+  | RawString
+  | AnsiCString
+  | ParameterExpansion
+  | CommandSubstitution
+  | EnvironmentVariable
+}
+
+@skip {} {
+  ExpansionSuffix {
+    '%' | '%%' | '#' | '##' |
+    (':'? ('+' | '-' | '=' | '?'))
+  }
+  
+  String { '"' (string_char | ParameterExpansion | CommandSubstitution | EnvironmentVariable | '$')+ '"' }
+  RawString { "'" raw_string_char+ "'" }
+  AnsiCString { "$'" raw_string_char+ "'" }
+  ParameterExpansion { "${" word (ExpansionSuffix literal?)? "}" }
+  EnvironmentVariable { "$" word }
+}
+
+// TODO: add support for backticks
+CommandSubstitution { ("$(" CompleteCommand ")") }
+
+case_item_ns { '('? pattern ')' (newline* | compound_list) }
+case_item { '('? pattern ')' (newline* | compound_list) op<';;'> newline* }
+pattern { word ('|' word)* }
+
+IfClause {
+  kw<'if'> if_leg (kw<'elif'> if_leg)* (kw<'else'> compound_list)? kw<'fi'>
+}
+
+if_leg {
+  compound_list kw<'then'> compound_list
+}
+
+
+kw<term> { @specialize[@name={term}]<word, term> }
+
+Assignment {
+  word ('=' | '+=') literal
+}
+
+@tokens {
+  Comment { "#" ![\n\r]* }
+  
+  spaces[@export] { $[\u0009 \u000b\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000\ufeff]+ }
+
+  newline[@export] { $[\r\n\u2028\u2029] }
+
+  word { ![*?[#~=%|&;<>()\$`\\"'{}!+ \n\t]+ }
+
+  string_char { ![\$"`] }
+  raw_string_char { !['] }
+
+  op<expr> { expr }
+
+  io_number { @digit+ }
+
+  LogicOp<expr> { expr }
+
+  separator { (';' | '&' | newline) newline* }
+  sequential_sep { (';' | newline) newline* }
+
+  @precedence { word, io_number }
+  @precedence { sequential_sep, word }
+  @precedence { raw_string_char, string_char, Comment, spaces, newline, separator, word }
+  @precedence { op, LogicOp, separator }
+
+}
+
