@@ -1,6 +1,6 @@
 {
   "name": "@fig/lezer-bash",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Lezer-based Bash grammar",
   "main": "dist/index.cjs",
   "type": "module",
@@ -8,23 +8,26 @@
     "import": "./dist/index.es.js",
     "require": "./dist/index.cjs"
   },
+  "files": [
+    "dist/"
+  ],
   "module": "dist/index.es.js",
   "types": "dist/index.d.ts",
   "author": "Sean Sullivan <sean@fig.io>",
   "license": "MIT",
   "devDependencies": {
     "@lezer/generator": "^1.0.0",
+    "@rollup/plugin-node-resolve": "^9.0.0",
     "mocha": "^9.0.1",
-    "rollup": "^2.52.2",
-    "@rollup/plugin-node-resolve": "^9.0.0"
+    "rollup": "^2.52.2"
   },
   "dependencies": {
-    "@lezer/lr": "^1.0.0",
-    "@lezer/highlight": "^1.0.0"
+    "@lezer/highlight": "^1.0.0",
+    "@lezer/lr": "^1.0.0"
   },
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/withfig/lezer-bash.git"
+    "type": "git",
+    "url": "https://github.com/withfig/lezer-bash.git"
   },
   "scripts": {
     "build": "lezer-generator src/bash.grammar -o src/parser && rollup -c",
@@ -33,4 +36,3 @@
     "test": "mocha test/test-*.js"
   }
 }
-

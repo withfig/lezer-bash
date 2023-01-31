@@ -150,12 +150,14 @@ Assignment {
   separator { (';' | '&' | newline) newline* }
   sequential_sep { (';' | newline) newline* }
 
-  "${" "}" "(" ")" "$(" ")" ";" "&" "&&" "||" "|" "=" "+="
+  "{" "}" "${" 
+  "(" ")" "$(" 
+  ";" "&"
+  "&&" "||" "|"
+  "=" "+="
   
   @precedence { word, io_number }
   @precedence { sequential_sep, word }
   @precedence { raw_string_char, string_char, Comment, spaces, newline, separator, word }
   @precedence { ';;', "&&", separator }
-
 }
-
