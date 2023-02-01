@@ -1,6 +1,6 @@
 {
   "name": "@fig/lezer-bash",
-  "version": "1.2.1",
+  "version": "1.2.3",
   "description": "Lezer-based Bash grammar",
   "main": "dist/index.cjs",
   "type": "module",
@@ -34,5 +34,8 @@
     "build-debug": "lezer-generator src/bash.grammar --names -o src/parser && rollup -c",
     "prepare": "npm run build",
     "test": "mocha test/test-*.js"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
