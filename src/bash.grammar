@@ -13,7 +13,7 @@
   io @right
 }
 
-@top Program { newline* | newline* !nl (CompleteCommand newline+)* CompleteCommand? }
+@top Program { newline* !nl (CompleteCommand newline+)* CompleteCommand? }
 
 CompleteCommand {
   and_or !sep ((';' | '&') and_or)* (';' | '&')?
@@ -84,26 +84,29 @@ CaseClause {
 
 @skip { spaces | Comment }
 
-// TODO: support concatenation and arithemtic expansion
-literal {
-  Literal { word }
-  | String
-  | RawString
-  | AnsiCString
-  | ParameterExpansion
-  | CommandSubstitution
-  | EnvironmentVariable
-}
 
 @skip {} {
   ExpansionSuffix {
     '%' | '%%' | '#' | '##' |
     (':'? ('+' | '-' | '=' | '?'))
   }
+
   
-  String { '"' (string_char | '\\' | ParameterExpansion | CommandSubstitution | EnvironmentVariable | '$')+ '"' }
-  RawString { "'" raw_string_char+ "'" }
-  AnsiCString { "$'" raw_string_char+ "'" }
+  // TODO: support concatenation and arithemtic expansion
+  literal {
+    Literal { word }
+    | String
+    | FigVariable
+    | RawString
+    | AnsiCString
+    | ParameterExpansion
+    | CommandSubstitution
+    | EnvironmentVariable
+  }
+
+  RawString { "'" (raw_string_char | FigVariable)* "'" }
+  AnsiCString { "$'" (raw_string_char | FigVariable)* "'" }
+  String { '"' (string_char | '\\' | ParameterExpansion | CommandSubstitution | EnvironmentVariable | FigVariable | '$')* '"' }
   ParameterExpansion { "${" VariableName { word } (ExpansionSuffix literal?)? "}" }
   EnvironmentVariable { "$" VariableName { word } }
 }
@@ -120,7 +123,7 @@ IfClause {
 }
 
 if_leg {
-  compound_list kw<'then'> compound_list
+  compound_list kw<'then'> compound_list newline*
 }
 
 
@@ -144,6 +147,7 @@ Assignment {
 
   string_char { ![\\\$"] }
   raw_string_char { !['] }
+  FigVariable { "{{" $[a-zA-Z0-9-]+ "}}" }
 
   io_number { @digit+ }
   
